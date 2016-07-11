@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from django.core.urlresolvers import reverse
 from django.template import Library
+from django.template.loader import render_to_string
 from django.utils.html import format_html
 
 register = Library()
@@ -82,3 +83,12 @@ def user_context(context):
     if user.is_anonymous():
         return None
     return user
+
+
+@register.simple_tag(takes_context=True)
+def display_notification(context, notification):
+    templates = [
+        'notifications/%s/notification.html' % notification.verb.replace(' ', '_'),
+        'notifications/notification.html',
+    ]
+    return render_to_string(templates, context)

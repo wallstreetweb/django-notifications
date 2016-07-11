@@ -25,6 +25,7 @@ setup(
         'django>=1.7',
         'django-model-utils>=2.0.3',
         'jsonfield>=1.0.3',
+        'django-gm2m>=0.4.4',
         'pytz'
     ],
     test_requires=[

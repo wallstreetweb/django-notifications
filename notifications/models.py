@@ -2,6 +2,7 @@ from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django import get_version
 from django.utils import timezone
+from gm2m import GM2MField
 
 from distutils.version import StrictVersion
 
@@ -157,6 +158,7 @@ class Notification(models.Model):
     actor_object_id = models.CharField(max_length=255)
     actor = GenericForeignKey('actor_content_type', 'actor_object_id')
 
+    actors = GM2MField()
     verb = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
 
@@ -255,29 +257,50 @@ def notify_handler(verb, **kwargs):
         recipients = [recipient]
 
     for recipient in recipients:
-        newnotify = Notification(
-            recipient=recipient,
-            actor_content_type=ContentType.objects.get_for_model(actor),
-            actor_object_id=actor.pk,
-            verb=text_type(verb),
-            public=public,
-            description=description,
-            timestamp=timestamp,
-            level=level,
-        )
-
-        # Set optional objects
+        past_notifications = Notification.objects.filter(recipient=recipient, verb=text_type(verb))
         for obj, opt in optional_objs:
-            if obj is not None:
-                setattr(newnotify, '%s_object_id' % opt, obj.pk)
-                setattr(newnotify, '%s_content_type' % opt,
-                        ContentType.objects.get_for_model(obj))
+            if obj:
+                if opt == 'target':
+                    past_notifications = past_notifications.filter(
+                        target_content_type=ContentType.objects.get_for_model(obj), target_object_id=obj.pk)
+                elif opt == 'action_object':
+                    past_notifications = past_notifications.filter(
+                        action_object_content_type=ContentType.objects.get_for_model(obj),
+                        action_object_object_id=obj.pk)
+        try:
+            last_notification = past_notifications.get()
+        except Notification.DoesNotExist:
+            last_notification = None
+        if last_notification:
+            last_notification.actor = actor
+            last_notification.timestamp = timestamp
+            if not actor in last_notification.actors.all():
+                last_notification.actors.add(actor)
+            last_notification.save()
+        else:
+            newnotify = Notification(
+                recipient=recipient,
+                actor_content_type=ContentType.objects.get_for_model(actor),
+                actor_object_id=actor.pk,
+                verb=text_type(verb),
+                public=public,
+                description=description,
+                timestamp=timestamp,
+                level=level,
+            )
 
-        if len(kwargs) and EXTRA_DATA:
-            newnotify.data = kwargs
+            # Set optional objects
+            for obj, opt in optional_objs:
+                if obj is not None:
+                    setattr(newnotify, '%s_object_id' % opt, obj.pk)
+                    setattr(newnotify, '%s_content_type' % opt,
+                            ContentType.objects.get_for_model(obj))
 
-        newnotify.save()
+            if len(kwargs) and EXTRA_DATA:
+                newnotify.data = kwargs
 
+            newnotify.save()
+            newnotify.actors.add(actor)
 
 # connect the signal
 notify.connect(notify_handler, dispatch_uid='notifications.models.notification')
