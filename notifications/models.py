@@ -276,6 +276,7 @@ def notify_handler(verb, **kwargs):
             last_notification.timestamp = timestamp
             if not actor in last_notification.actors.all():
                 last_notification.actors.add(actor)
+            last_notification.unread = True
             last_notification.save()
         else:
             newnotify = Notification(
