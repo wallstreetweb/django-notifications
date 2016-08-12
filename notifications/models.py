@@ -16,7 +16,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.utils.six import text_type
 from .utils import id2slug
 
-from .signals import notify
+from .signals import notify, new_unread_notify
 
 from model_utils import Choices
 from jsonfield.fields import JSONField
@@ -257,6 +257,7 @@ def notify_handler(verb, **kwargs):
         recipients = [recipient]
 
     for recipient in recipients:
+        new_unread_notification = False
         past_notifications = Notification.objects.filter(recipient=recipient, verb=text_type(verb))
         for obj, opt in optional_objs:
             if obj:
@@ -276,6 +277,8 @@ def notify_handler(verb, **kwargs):
             last_notification.timestamp = timestamp
             if not actor in last_notification.actors.all():
                 last_notification.actors.add(actor)
+            if not last_notification.unread:
+                new_unread_notification = True
             last_notification.unread = True
             last_notification.save()
         else:
@@ -302,6 +305,13 @@ def notify_handler(verb, **kwargs):
 
             newnotify.save()
             newnotify.actors.add(actor)
+            new_unread_notification = True
+
+        if new_unread_notification:
+            print("new_unread_notify.send")
+            print(recipient)
+            new_unread_notify.send(recipient)
+
 
 # connect the signal
 notify.connect(notify_handler, dispatch_uid='notifications.models.notification')
