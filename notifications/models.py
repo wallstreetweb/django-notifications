@@ -279,7 +279,8 @@ def notify_handler(verb, **kwargs):
                 last_notification.actors.add(actor)
             if not last_notification.unread:
                 new_unread_notification = True
-            last_notification.unread = True
+                last_notification.unread = True
+                last_notification.emailed = False
             last_notification.save()
         else:
             newnotify = Notification(
@@ -291,6 +292,7 @@ def notify_handler(verb, **kwargs):
                 description=description,
                 timestamp=timestamp,
                 level=level,
+                emailed=False
             )
 
             # Set optional objects
