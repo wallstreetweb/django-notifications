@@ -308,8 +308,6 @@ def notify_handler(verb, **kwargs):
             new_unread_notification = True
 
         if new_unread_notification:
-            print("new_unread_notify.send")
-            print(recipient)
             new_unread_notify.send(recipient)
 
 
