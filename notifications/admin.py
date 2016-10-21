@@ -6,7 +6,7 @@ from .models import Notification
 
 class NotificationAdmin(admin.ModelAdmin):
     list_display = ('recipient', 'actor',
-                    'level', 'target', 'unread', 'public')
+                    'level', 'target', 'unread', 'emailed', 'public')
     list_filter = ('level', 'unread', 'public', 'timestamp', )
 
 admin.site.register(Notification, NotificationAdmin)
