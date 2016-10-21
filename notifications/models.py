@@ -272,6 +272,8 @@ def notify_handler(verb, **kwargs):
             last_notification = past_notifications.get()
         except Notification.DoesNotExist:
             last_notification = None
+        except Notification.MultipleObjectsReturned:
+            last_notification = past_notifications.first()
         if last_notification:
             last_notification.actor = actor
             last_notification.timestamp = timestamp
